@@ -1,10 +1,10 @@
 # ComfyUI-KLingAI-API
 
-This is a custom node for ComfyUI that allows you to use the KLing AI API directly in ComfyUI. KLing AI API is based on top of [KLing AI](https://klingai.kuaishou.com/). For more information, see [KLing AI API Documentation](https://docs.qingque.cn/d/home/eZQClW07IFEuX1csc-VejdY2M?identityId=1oEER8VjdS8).
+This is a custom node for ComfyUI that allows you to use the KLing AI API directly in ComfyUI. KLing AI API is based on top of [KLing AI](https://klingai.com/). For more information, see [KLing AI API Documentation](https://docs.qingque.cn/d/home/eZQArO-0RpjbQMpf5DPa-w8Rp?identityId=1oEER8VjdS8#section=h.wxrj3t7cbpg3).
 
 
 ## Requirements
-Before using this node, you need to have [a KLing AI API key](https://docs.qingque.cn/d/home/eZQCR1cjLJ5SqrV-AfCve0rYn?identityId=1oEER8VjdS8). 
+Before using this node, you need to have [a KLing AI API key](https://docs.qingque.cn/d/home/eZQA6m4cRjTB1BBiE5eJ4lyvL?identityId=1oEER8VjdS8). 
 
 ## Installation
 
@@ -12,10 +12,10 @@ Before using this node, you need to have [a KLing AI API key](https://docs.qingq
 
 1. Navigate to the `ComfyUI/custom_nodes` directory.
 
-2. Clone this repository: `git clone https://github.com/KwaiVGI/ComfyUI-KLingAI-API`
+2. Clone this repository: `git clone https://github.com/`
   
 3. Install the dependencies:
-  - Windows (ComfyUI portable): `python -m pip install -r ComfyUI-KLingAI-API\requirements.txt`
+  - Windows (ComfyUI portable): `python -m pip install -r ComfyUI\custom_nodes\ComfyUI-KLingAI-API\requirements.txt`
   - Linux or MacOS: `cd ComfyUI-KLingAI-API && pip install -r requirements.txt`
 
 4. If you don't want to expose your key, you can add it into the `config.ini` file and keep it empty in the node.
@@ -59,4 +59,4 @@ This node is used to display the try-on effect.
 
 ## Pricing
 
-For pricing, follow [KLing AI Pricing](https://klingai.kuaishou.com/dev-center).
+For pricing, follow [KLing AI Pricing](https://klingai.com/dev-center).
