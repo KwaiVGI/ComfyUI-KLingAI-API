@@ -421,7 +421,8 @@ class PreviewVideo:
         file = f"{filename}_{counter:05}.mp4"
         file_path = os.path.join(full_output_folder, file)
 
+        if type(video_url) == list:
+            video_url = video_url[0]
         open(file_path, "wb").write(_fetch_image(video_url))            
-        print(f"Saving preview video to {file_path}")
 
         return {"ui": {"video_url": [video_url]}, "result": (file_path, )}
