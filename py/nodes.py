@@ -2,12 +2,14 @@ from .api import Client, ImageGenerator, Image2Video, Text2Video, CameraControl,
 import base64
 import io
 import os
+import re
 import numpy
 import PIL
 import requests
 import torch
 from collections.abc import Iterable
 import configparser
+import folder_paths
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
@@ -16,8 +18,8 @@ config = configparser.ConfigParser()
 config.read(config_path)
 
 
-def _fetch_image(url):
-    return requests.get(url, stream=True).content
+def _fetch_image(url, stream=True):
+    return requests.get(url, stream=stream).content
 
 
 def _tensor2images(tensor):
@@ -179,7 +181,7 @@ class Image2VideoNode:
         return {
             "required": {
                 "client": ("KLING_AI_API_CLIENT",),
-                "model": (["kling-v1"],),
+                "model": (["kling-v1", "kling-v1-5"],),
                 "image": ("IMAGE",),
 
             },
@@ -380,13 +382,47 @@ class PreviewVideo:
         return {
             "required": {
                 "video_url": ("STRING", {"forceInput": True}),
+                "filename_prefix": ("STRING", {"default": "KLingAI"}),
+                "save_output": ("BOOLEAN", {"default": True}),
             }
         }
 
     OUTPUT_NODE = True
     FUNCTION = "run"
     CATEGORY = "KLingAI"
-    RETURN_TYPES = ()
 
-    def run(self, video_url):
-        return {"ui": {"video_url": [video_url]}}
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("file_path",)
+
+    def run(self, video_url, filename_prefix, save_output):
+        if not save_output:
+            return {"ui": {"video_url": [video_url]}, "result": ('', )}
+        
+        output_dir = folder_paths.get_output_directory()
+        (
+            full_output_folder,
+            filename,
+            _,
+            _,
+            _,
+        ) = folder_paths.get_save_image_path(filename_prefix, output_dir)
+
+        max_counter = 0
+
+        matcher = re.compile(f"{re.escape(filename)}_(\\d+)\\D*\\..+", re.IGNORECASE)
+        for existing_file in os.listdir(full_output_folder):
+            match = matcher.fullmatch(existing_file)
+            if match:
+                file_counter = int(match.group(1))
+                if file_counter > max_counter:
+                    max_counter = file_counter
+
+        counter = max_counter + 1
+        file = f"{filename}_{counter:05}.mp4"
+        file_path = os.path.join(full_output_folder, file)
+
+        if type(video_url) == list:
+            video_url = video_url[0]
+        open(file_path, "wb").write(_fetch_image(video_url))            
+
+        return {"ui": {"video_url": [video_url]}, "result": (file_path, )}
