@@ -12,7 +12,7 @@ Before using this node, you need to have [a KLing AI API key](https://docs.qingq
 
 1. Navigate to the `ComfyUI/custom_nodes` directory.
 
-2. Clone this repository: `git clone https://github.com/`
+2. Clone this repository: `git clone https://github.com/KwaiVGI/ComfyUI-KLingAI-API`
   
 3. Install the dependencies:
   - Windows (ComfyUI portable): `python -m pip install -r ComfyUI\custom_nodes\ComfyUI-KLingAI-API\requirements.txt`
