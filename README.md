@@ -57,6 +57,18 @@ This node is used to display the try-on effect.
   <img src="./examples/kolors_virtual_try_on.png" alt="text2video">
 </p>
 
+### Video Extend
+This node is used to extend a video.
+<p align="center">
+  <img src="./examples/video_extend.png" alt="video_extend">
+</p>
+
+### Lip Sync
+This node is used to generate a lip sync video.
+<p align="center">
+  <img src="./examples/lip_sync.png" alt="lip_sync">
+</p>
+
 ## Pricing
 
 For pricing, follow [KLing AI Pricing](https://klingai.com/dev-center).

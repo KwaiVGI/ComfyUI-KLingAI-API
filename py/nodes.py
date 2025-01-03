@@ -1,4 +1,4 @@
-from .api import Client, ImageGenerator, Image2Video, Text2Video, CameraControl, CameraControlConfig, KolorsVurtualTryOn
+from .api import Client, ImageGenerator, Image2Video, Text2Video, CameraControl, CameraControlConfig, KolorsVurtualTryOn, VideoExtend, LipSync, LipSyncInput
 import base64
 import io
 import os
@@ -203,8 +203,8 @@ class Image2VideoNode:
             }
         }
 
-    RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("url",)
+    RETURN_TYPES = ("STRING", "STRING")
+    RETURN_NAMES = ("url", "video_id")
 
     FUNCTION = "generate"
 
@@ -233,11 +233,11 @@ class Image2VideoNode:
         generator.duration = duration
         response = generator.run(client)
 
-        result = []
         for video_info in response.task_result.videos:
-            result.append(video_info.url)
-        print(f'KLing API output: {result}')
-        return (result,)
+            print(f'KLing API output video id: {video_info.id}, url: {video_info.url}')
+            return (video_info.url, video_info.id)
+        
+        return ('', '')
 
 
 class Text2VideoNode:
@@ -278,8 +278,8 @@ class Text2VideoNode:
             }
         }
 
-    RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("url",)
+    RETURN_TYPES = ("STRING", "STRING")
+    RETURN_NAMES = ("url", "video_id")
 
     FUNCTION = "generate"
 
@@ -302,7 +302,6 @@ class Text2VideoNode:
 
         generator = Text2Video()
         generator.model = model
-        generator.prompt = prompt
         generator.prompt = prompt
         generator.negative_prompt = negative_prompt
         generator.cfg_scale = cfg_scale
@@ -330,11 +329,11 @@ class Text2VideoNode:
 
         response = generator.run(client)
 
-        result = []
         for video_info in response.task_result.videos:
-            result.append(video_info.url)
-        print(f'KLing API output: {result}')
-        return (result,)
+            print(f'KLing API output video id: {video_info.id}, url: {video_info.url}')
+            return (video_info.url, video_info.id)
+        
+        return ('', '')
 
 
 class KolorsVirtualTryOnNode:
@@ -343,7 +342,7 @@ class KolorsVirtualTryOnNode:
         return {
             "required": {
                 "client": ("KLING_AI_API_CLIENT",),
-                "model_name": (["kolors-virtual-try-on-v1"],),
+                "model_name": (["kolors-virtual-try-on-v1", "kolors-virtual-try-on-v1-5"],),
                 "human_image": ("IMAGE",),
                 "cloth_image": ("IMAGE",),
             },
@@ -426,3 +425,204 @@ class PreviewVideo:
         open(file_path, "wb").write(_fetch_image(video_url))            
 
         return {"ui": {"video_url": [video_url]}, "result": (file_path, )}
+
+class VideoExtendNode:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "client": ("KLING_AI_API_CLIENT",),
+                "video_id": ("STRING", {"multiline": False, "default": ""}),
+                "prompt": ("STRING", {"multiline": True, "default": ""}),
+            }
+        }
+
+    OUTPUT_NODE = True
+    FUNCTION = "run"
+    CATEGORY = "KLingAI"
+
+    RETURN_TYPES = ("STRING", "STRING")
+    RETURN_NAMES = ("url", "video_id")
+
+    def run(self, client, video_id, prompt):
+
+        generator = VideoExtend()
+        generator.video_id = video_id
+        generator.prompt = prompt
+
+        response = generator.run(client)
+
+        for video_info in response.task_result.videos:
+            print(f'KLing API output video id: {video_info.id}, url: {video_info.url}')
+            return (video_info.url, video_info.id)
+        
+        return ('', '')
+
+class LipSyncTextInputNode:
+
+    audio_types = {
+        "阳光少年": "genshin_vindi2",
+        "懂事小弟": "zhinen_xuesheng",
+        "运动少年": "tiyuxi_xuedi",
+        "青春少女": "ai_shatang",
+        "温柔小妹": "genshin_klee2",
+        "元气少女": "genshin_kirara",
+        "阳光男生": "ai_kaiya",
+        "幽默小哥": "tiexin_nanyou",
+        "文艺小哥": "ai_chenjiahao_712",
+        "甜美邻家": "girlfriend_1_speech02",
+        "温柔姐姐": "chat1_female_new-3",
+        "职场女青": "girlfriend_2_speech02",
+        "活泼男童": "cartoon-boy-07",
+        "俏皮女童": "cartoon-girl-01",
+        "稳重老爸": "ai_huangyaoshi_712",
+        "温柔妈妈": "you_pingjing",
+        "严肃上司": "ai_laoguowang_712",
+        "优雅贵妇": "chengshu_jiejie",
+        "慈祥爷爷": "zhuxi_speech02",
+        "唠叨爷爷": "uk_oldman3",
+        "唠叨奶奶": "laopopo_speech02",
+        "和蔼奶奶": "heainainai_speech02",
+        "东北老铁": "dongbeilaotie_speech02",
+        "重庆小伙": "chongqingxiaohuo_speech02",
+        "四川妹子": "chuanmeizi_speech02",
+        "潮汕大叔": "chaoshandashu_speech02",
+        "台湾男生": "ai_taiwan_man2_speech02",
+        "西安掌柜": "xianzhanggui_speech02",
+        "天津姐姐": "tianjinjiejie_speech02",
+        "Sunny": "genshin_vindi2",
+        "Sage": "zhinen_xuesheng",
+        "Ace": "AOT",
+        "Blossom": "ai_shatang",
+        "Peppy": "genshin_klee2",
+        "Dove": "genshin_kirara",
+        "Shine": "ai_kaiya",
+        "Anchor": "oversea_male1",
+        "Lyric": "ai_chenjiahao_712",
+        "Melody": "girlfriend_4_speech02",
+        "Tender": "chat1_female_new-3",
+        "Siren": "chat_0407_5-1",
+        "Zippy": "cartoon-boy-07",
+        "Bud": "uk_boy1",
+        "Sprite": "cartoon-girl-01",
+        "Candy": "PeppaPig_platform",
+        "Beacon": "ai_huangzhong_712",
+        "Rock": "ai_huangyaoshi_712",
+        "Titan": "ai_laoguowang_712",
+        "Grace": "chengshu_jiejie",
+        "Helen": "you_pingjing",
+        "Lore": "calm_story1",
+        "Crag": "uk_man2",
+        "Prattle": "laopopo_speech02",
+        "Hearth": "heainainai_speech02"
+    }
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "text": ("STRING", {"multiline": True, "default": ""}),
+                "voice_id": (list(LipSyncTextInputNode.audio_types.keys()), {"multiline": False, "default": ""}),
+                "voice_language": (["zh", "en"], {"multiline": True, "default": "zh"}),
+                "voice_speed": ("FLOAT", {
+                    "default": 1.0,
+                    "min": 0.8,
+                    "max": 2.0,
+                    "step": 0.1,
+                    "round": 0.01,
+                    "display": "number",
+                    "lazy": True
+                })
+            }
+        }
+
+    OUTPUT_NODE = True
+    FUNCTION = "run"
+    CATEGORY = "KLingAI"
+
+    RETURN_TYPES = ("KLING_AI_API_LIPSYNC_INPUT", )
+    RETURN_NAMES = ("input", )
+
+    def run(self, text, voice_id, voice_language, voice_speed):
+        input = LipSyncInput()
+        input.mode = "text2video"
+        input.text = text
+        if voice_id in LipSyncTextInputNode.audio_types:
+            input.voice_id = LipSyncTextInputNode.audio_types[voice_id]
+        else:
+            input.voice_id = voice_id
+
+        input.voice_language = voice_language
+        input.voice_speed = voice_speed
+        
+        return (input, )
+    
+class LipSyncAudioInputNode:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "optional": {
+                "audio_file": ("STRING", {"multiline": False, "default": ""}),
+                "audio_url": ("STRING", {"multiline": False, "default": ""}),
+            },
+        }
+
+    OUTPUT_NODE = True
+    FUNCTION = "run"
+    CATEGORY = "KLingAI"
+
+    RETURN_TYPES = ("KLING_AI_API_LIPSYNC_INPUT", )
+    RETURN_NAMES = ("input", )
+
+    def run(self, audio_file, audio_url):
+        input = LipSyncInput()
+        input.mode = "audio2video"
+        if audio_file is not None and len(audio_file) > 0:
+            input.audio_type = "file"
+            if os.path.exists(audio_file):
+                with open(audio_file, 'rb') as file:
+                    file_data = file.read()
+                    input.audio_file = base64.b64encode(file_data).decode('utf-8')
+            else:
+                raise Exception(f"Audio file not found: {audio_file}")
+
+        if audio_url is not None and len(audio_url) > 0:
+            input.audio_type = "url"
+            input.audio_url = audio_url
+
+        return (input, )
+
+class LipSyncNode:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "client": ("KLING_AI_API_CLIENT", ),
+                "video_id": ("STRING", {"multiline": False, "default": ""}),
+                "input": ("KLING_AI_API_LIPSYNC_INPUT", )
+            },
+            "optional": {
+                
+            }
+        }
+
+    OUTPUT_NODE = True
+    FUNCTION = "run"
+    CATEGORY = "KLingAI"
+
+    RETURN_TYPES = ("STRING", "STRING")
+    RETURN_NAMES = ("url", "video_id")
+
+    def run(self, client, video_id, input):
+
+        generator = LipSync()
+        input.video_id = video_id
+        generator.input = input
+        
+        response = generator.run(client)
+
+        for video_info in response.task_result.videos:
+            print(f'KLing API output video id: {video_info.id}, url: {video_info.url}')
+            return (video_info.url, video_info.id)
+        
+        return ('', '')

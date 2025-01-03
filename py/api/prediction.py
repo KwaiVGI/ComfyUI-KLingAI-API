@@ -95,7 +95,6 @@ class Prediction:
         path = self._query_prediction_info_path + "/" + task_id
         resp = client.request(method=self._query_prediction_info_method, path=path)
         self._task_info = self._response_cls(**resp.get("data"))
-        print(f'query: {path}, status: {self._task_info.task_status}')
 
     def run(self, client: Client):
         resp = client.request(method=self._request_method, path=self._request_path, json=self.to_dict())
