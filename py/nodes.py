@@ -181,7 +181,7 @@ class Image2VideoNode:
         return {
             "required": {
                 "client": ("KLING_AI_API_CLIENT",),
-                "model": (["kling-v1", "kling-v1-5"],),
+                "model": (["kling-v1", "kling-v1-5", "kling-v1-6"],),
                 "image": ("IMAGE",),
 
             },
@@ -223,7 +223,7 @@ class Image2VideoNode:
                  mode=None,
                  duration=None):
         generator = Image2Video()
-        generator.model = model
+        generator.model_name = model
         generator.image = _image_to_base64(image)
         generator.image_tail = _image_to_base64(image_tail)
         generator.prompt = prompt
@@ -246,7 +246,7 @@ class Text2VideoNode:
         return {
             "required": {
                 "client": ("KLING_AI_API_CLIENT",),
-                "model": (["kling-v1"],),
+                "model": (["kling-v1", "kling-v1-6"],),
                 "prompt": ("STRING", {"multiline": True, "default": ""}),
             },
             "optional": {
@@ -301,7 +301,7 @@ class Text2VideoNode:
                  camera_control_value=None):
 
         generator = Text2Video()
-        generator.model = model
+        generator.model_name = model
         generator.prompt = prompt
         generator.negative_prompt = negative_prompt
         generator.cfg_scale = cfg_scale

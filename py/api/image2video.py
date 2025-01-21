@@ -2,7 +2,7 @@ from .prediction import Prediction, VideoPredictionResponse
 
 
 class Image2Video(Prediction):
-    model: str
+    model_name: str
 
     image: str
 

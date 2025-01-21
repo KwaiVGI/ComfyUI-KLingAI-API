@@ -16,7 +16,7 @@ class CameraControl(Prediction):
 
 
 class Text2Video(Prediction):
-    model: str
+    model_name: str
 
     prompt: str
 
