@@ -10,6 +10,7 @@ import torch
 from collections.abc import Iterable
 import configparser
 import folder_paths
+import time
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
@@ -175,7 +176,10 @@ class ImageGeneratorNode:
             print(f'KLing API output: {image_info.url}')
             images.append(img)
         return (torch.cat(images,dim=0),)
-
+    
+    @classmethod
+    def IS_CHANGED(s, images):
+        return time.time()
 
 class Image2VideoNode:
     @classmethod
