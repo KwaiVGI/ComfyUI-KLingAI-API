@@ -13,11 +13,11 @@ import math
 
 class SaveCoverAudioVideoKLing:
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         return {"required":
                     {
-                        "kLing_video_path":("STRING", {"forceInput": True}),
-                        "filename_prefix": ("STRING", {"default": "yxkj"}),
+                        "kLing_video_path":("STRING",{"default":""}),
+                        "filename_prefix": ("STRING", {"default":"yxkj"}),
                         "cover_frame_num":("INT",{"default":1}),
                         "audio_start_s":("INT",{"default":0}),
                         "audio_path": ("STRING", {"default":""}),
@@ -26,7 +26,6 @@ class SaveCoverAudioVideoKLing:
                 }
 
     RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("file_path",)
     FUNCTION = "save_video"
     OUTPUT_NODE = True
     CATEGORY = "KLingAI"
@@ -177,7 +176,7 @@ class SaveCoverAudioVideoKLing:
         except Exception as e:
             print(f"未知错误: {str(e)}")
 
-    def save_video(self,kLing_video_path,filename_prefix:str,audio_path:str,cover_img_path:str,cover_frame_num:int,audio_start_s:int):
+    def save_video(self,kLing_video_path:str,filename_prefix:str,audio_path:str,cover_img_path:str,cover_frame_num:int,audio_start_s:int):
         video_path = kLing_video_path 
         if len(cover_img_path) > 1:
             cover_video,cover_file_name = self.replace_first_frame_with_image(video_path,cover_img_path,cover_frame_num,filename_prefix)

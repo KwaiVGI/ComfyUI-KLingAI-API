@@ -114,7 +114,7 @@ class ImageGeneratorNode:
         return {
             "required": {
                 "client": ("KLING_AI_API_CLIENT",),
-                "model": (["kling-v1"],),
+                "model": (["kling-v1","kling-v1-5"],),
                 "prompt": ("STRING", {"multiline": True, "default": ""}),
             },
             "optional": {
@@ -142,7 +142,7 @@ class ImageGeneratorNode:
         }
 
     RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("image",)
+    RETURN_NAMES = ("images",)
 
     FUNCTION = "generate"
 
@@ -169,10 +169,12 @@ class ImageGeneratorNode:
         generator.n = image_num
         response = generator.run(client)
 
+        images = []
         for image_info in response.task_result.images:
             img = _images2tensor(_decode_image(_fetch_image(image_info.url)))
             print(f'KLing API output: {image_info.url}')
-            return (img,)
+            images.append(img)
+        return (torch.cat(images,dim=0),)
 
 
 class Image2VideoNode:
