@@ -160,7 +160,7 @@ class ImageGeneratorNode:
                  image_num=None,
                  aspect_ratio=None):
         generator = ImageGenerator()
-        generator.model = model
+        generator.model_name = model
         generator.prompt = prompt
         generator.negative_prompt = negative_prompt
         generator.image = _image_to_base64(image)
