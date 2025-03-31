@@ -13,7 +13,7 @@ class Client:
     __token = None
     __client = None
 
-    def __init__(self, access_key, secret_key, timeout=5, poll_interval=1.0, ttl=1800):
+    def __init__(self, access_key, secret_key, timeout=30, poll_interval=1.0, ttl=1800):
         super().__init__()
         self._access_key = access_key
         self._secret_key = secret_key
