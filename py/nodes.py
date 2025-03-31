@@ -178,7 +178,7 @@ class ImageGeneratorNode:
         return (torch.cat(images,dim=0),)
     
     @classmethod
-    def IS_CHANGED(s, images):
+    def IS_CHANGED(s,**args):
         return time.time()
 
 class Image2VideoNode:
@@ -244,6 +244,10 @@ class Image2VideoNode:
             return (video_info.url, video_info.id)
         
         return ('', '')
+    
+    @classmethod
+    def IS_CHANGED(s,**args):
+        return time.time()
 
 
 class Text2VideoNode:
