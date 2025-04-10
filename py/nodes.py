@@ -10,6 +10,7 @@ import torch
 from collections.abc import Iterable
 import configparser
 import folder_paths
+import time
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
@@ -114,7 +115,7 @@ class ImageGeneratorNode:
         return {
             "required": {
                 "client": ("KLING_AI_API_CLIENT",),
-                "model": (["kling-v1"],),
+                "model": (["kling-v1","kling-v1-5"],),
                 "prompt": ("STRING", {"multiline": True, "default": ""}),
             },
             "optional": {
@@ -142,7 +143,7 @@ class ImageGeneratorNode:
         }
 
     RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("image",)
+    RETURN_NAMES = ("images",)
 
     FUNCTION = "generate"
 
@@ -160,7 +161,7 @@ class ImageGeneratorNode:
                  image_num=None,
                  aspect_ratio=None):
         generator = ImageGenerator()
-        generator.model = model
+        generator.model_name = model
         generator.prompt = prompt
         generator.negative_prompt = negative_prompt
         generator.image = _image_to_base64(image)
@@ -169,11 +170,16 @@ class ImageGeneratorNode:
         generator.n = image_num
         response = generator.run(client)
 
+        images = []
         for image_info in response.task_result.images:
             img = _images2tensor(_decode_image(_fetch_image(image_info.url)))
             print(f'KLing API output: {image_info.url}')
-            return (img,)
-
+            images.append(img)
+        return (torch.cat(images,dim=0),)
+    
+    @classmethod
+    def IS_CHANGED(s,**args):
+        return time.time()
 
 class Image2VideoNode:
     @classmethod
@@ -238,6 +244,10 @@ class Image2VideoNode:
             return (video_info.url, video_info.id)
         
         return ('', '')
+    
+    @classmethod
+    def IS_CHANGED(s,**args):
+        return time.time()
 
 
 class Text2VideoNode:
