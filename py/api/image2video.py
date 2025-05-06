@@ -1,5 +1,5 @@
 from .prediction import Prediction, VideoPredictionResponse
-
+from .text2video import CameraControl
 
 class Image2Video(Prediction):
     model_name: str
@@ -15,6 +15,8 @@ class Image2Video(Prediction):
     cfg_scale: float
 
     mode: str
+
+    camera_control: CameraControl
 
     duration: str
 

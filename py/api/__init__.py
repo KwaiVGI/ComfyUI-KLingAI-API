@@ -6,3 +6,4 @@ from .image2video import Image2Video
 from .virtual_try_on import KolorsVurtualTryOn
 from .video_entend import VideoExtend
 from .lip_sync import LipSync, LipSyncInput
+from .effects import Effects, EffectInput

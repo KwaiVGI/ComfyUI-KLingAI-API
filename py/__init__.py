@@ -1,4 +1,4 @@
-from .nodes import Text2VideoNode, ImageGeneratorNode, Image2VideoNode, KLingAIAPIClient, PreviewVideo, KolorsVirtualTryOnNode, VideoExtendNode, LipSyncNode, LipSyncTextInputNode, LipSyncAudioInputNode
+from .nodes import Text2VideoNode, ImageGeneratorNode, Image2VideoNode, KLingAIAPIClient, PreviewVideo, KolorsVirtualTryOnNode, VideoExtendNode, LipSyncNode, LipSyncTextInputNode, LipSyncAudioInputNode, EffectNode
 
 NODE_CLASS_MAPPINGS = {
     'Client': KLingAIAPIClient,
@@ -11,4 +11,5 @@ NODE_CLASS_MAPPINGS = {
     'Lip Sync': LipSyncNode,
     'Lip Sync Text Input': LipSyncTextInputNode,
     'Lip Sync Audio Input': LipSyncAudioInputNode,
+    'Effects': EffectNode
 }

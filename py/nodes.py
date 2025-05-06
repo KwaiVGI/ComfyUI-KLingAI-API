@@ -1,4 +1,4 @@
-from .api import Client, ImageGenerator, Image2Video, Text2Video, CameraControl, CameraControlConfig, KolorsVurtualTryOn, VideoExtend, LipSync, LipSyncInput
+from .api import Client, ImageGenerator, Image2Video, Text2Video, CameraControl, CameraControlConfig, KolorsVurtualTryOn, VideoExtend, LipSync, LipSyncInput, EffectInput, Effects
 import base64
 import io
 import os
@@ -75,6 +75,7 @@ class KLingAIAPIClient:
             "required": {
                 "access_key": ("STRING", {"multiline": False, "default": ""}),
                 "secret_key": ("STRING", {"multiline": False, "default": ""}),
+                "poll_interval": ("INT", {"default": "1"}),
             },
         }
 
@@ -87,7 +88,7 @@ class KLingAIAPIClient:
 
     CATEGORY = "KLingAI"
 
-    def create_client(self, access_key, secret_key):
+    def create_client(self, access_key, secret_key, poll_interval):
 
         if access_key == "" or secret_key == "":
             try:
@@ -105,6 +106,7 @@ class KLingAIAPIClient:
         else:
             client = Client(access_key, secret_key)
 
+        client.poll_interval = poll_interval
         return (client,)
 
 
@@ -114,14 +116,24 @@ class ImageGeneratorNode:
         return {
             "required": {
                 "client": ("KLING_AI_API_CLIENT",),
-                "model": (["kling-v1"],),
+                "model": (["kling-v1", "kling-v1-5", "kling-v2"],),
                 "prompt": ("STRING", {"multiline": True, "default": ""}),
             },
             "optional": {
                 "negative_prompt": ("STRING", {"multiline": True, "default": ""}),
                 "image": ("IMAGE",),
+                "image_reference": (["None", "subject", "face"], ),
                 "image_fidelity": ("FLOAT", {
                     "default": 0.5,
+                    "min": 0.0,
+                    "max": 1.0,
+                    "step": 0.1,
+                    "round": 0.01,
+                    "display": "number",
+                    "lazy": True
+                }),
+                "human_fidelity": ("FLOAT", {
+                    "default": 0.45,
                     "min": 0.0,
                     "max": 1.0,
                     "step": 0.1,
@@ -156,23 +168,35 @@ class ImageGeneratorNode:
                  prompt,
                  negative_prompt=None,
                  image=None,
+                 image_reference="None",
                  image_fidelity=None,
+                 human_fidelity=None,
                  image_num=None,
                  aspect_ratio=None):
         generator = ImageGenerator()
-        generator.model = model
+        generator.model_name = model
         generator.prompt = prompt
         generator.negative_prompt = negative_prompt
         generator.image = _image_to_base64(image)
         generator.image_fidelity = image_fidelity
         generator.aspect_ratio = aspect_ratio
         generator.n = image_num
+        generator.human_fidelity = human_fidelity
+        if image_reference != 'None':
+            generator.image_reference = image_reference
+
         response = generator.run(client)
 
+        imgs = None
         for image_info in response.task_result.images:
             img = _images2tensor(_decode_image(_fetch_image(image_info.url)))
+            if imgs is None:
+                imgs = img
+            else:
+                imgs = torch.cat([imgs, img], dim=0)
             print(f'KLing API output: {image_info.url}')
-            return (img,)
+
+        return (imgs, )
 
 
 class Image2VideoNode:
@@ -181,11 +205,10 @@ class Image2VideoNode:
         return {
             "required": {
                 "client": ("KLING_AI_API_CLIENT",),
-                "model": (["kling-v1", "kling-v1-5", "kling-v1-6"],),
-                "image": ("IMAGE",),
-
+                "model": (["kling-v1", "kling-v1-5", "kling-v1-6", "kling-v2-master"],),
             },
             "optional": {
+                "image": ("IMAGE",),
                 "image_tail": ("IMAGE",),
                 "prompt": ("STRING", {"multiline": True, "default": ""}),
                 "negative_prompt": ("STRING", {"multiline": True, "default": ""}),
@@ -200,6 +223,18 @@ class Image2VideoNode:
                 }),
                 "mode": (["std", "pro"],),
                 "duration": (["5", "10"],),
+                "camera_control_type": (
+                    ["None", "simple", "down_back", "forward_up", "right_turn_forward", "left_turn_forward"],),
+                "camera_control_config": (["horizontal", "vertical", "pan", "tilt", "roll", "zoom"],),
+                "camera_control_value": ("FLOAT", {
+                    "default": 0.5,
+                    "min": -10.0,
+                    "max": 10.0,
+                    "step": 1.0,
+                    "round": 1.0,
+                    "display": "number",
+                    "lazy": True
+                })
             }
         }
 
@@ -215,13 +250,17 @@ class Image2VideoNode:
     def generate(self,
                  client,
                  model,
-                 image,
+                 image=None,
                  image_tail=None,
                  prompt=None,
                  negative_prompt=None,
                  cfg_scale=None,
                  mode=None,
-                 duration=None):
+                 duration=None,
+                 camera_control_type=None,
+                 camera_control_config=None,
+                 camera_control_value=None):
+        
         generator = Image2Video()
         generator.model_name = model
         generator.image = _image_to_base64(image)
@@ -231,6 +270,26 @@ class Image2VideoNode:
         generator.cfg_scale = cfg_scale
         generator.mode = mode
         generator.duration = duration
+
+        if camera_control_type != 'None':
+            generator.camera_control = CameraControl()
+            generator.camera_control.type = camera_control_type
+
+            if generator.camera_control.type == "simple":
+                generator.camera_control.config = CameraControlConfig()
+                if camera_control_config == "horizontal":
+                    generator.camera_control.config.horizontal = camera_control_value
+                if camera_control_config == "vertical":
+                    generator.camera_control.config.vertical = camera_control_value
+                if camera_control_config == "pan":
+                    generator.camera_control.config.pan = camera_control_value
+                if camera_control_config == "tilt":
+                    generator.camera_control.config.tilt = camera_control_value
+                if camera_control_config == "roll":
+                    generator.camera_control.config.roll = camera_control_value
+                if camera_control_config == "zoom":
+                    generator.camera_control.config.zoom = camera_control_value
+
         response = generator.run(client)
 
         for video_info in response.task_result.videos:
@@ -246,7 +305,7 @@ class Text2VideoNode:
         return {
             "required": {
                 "client": ("KLING_AI_API_CLIENT",),
-                "model": (["kling-v1", "kling-v1-6"],),
+                "model": (["kling-v1", "kling-v1-6", "kling-v2-master"],),
                 "prompt": ("STRING", {"multiline": True, "default": ""}),
             },
             "optional": {
@@ -264,7 +323,7 @@ class Text2VideoNode:
                 "aspect_ratio": (["16:9", "9:16", "1:1"],),
                 "duration": (["5", "10"],),
                 "camera_control_type": (
-                    ["simple", "down_back", "forward_up", "right_turn_forward", "left_turn_forward"],),
+                    ["None", "simple", "down_back", "forward_up", "right_turn_forward", "left_turn_forward"],),
                 "camera_control_config": (["horizontal", "vertical", "pan", "tilt", "roll", "zoom"],),
                 "camera_control_value": ("FLOAT", {
                     "default": 0.5,
@@ -309,23 +368,24 @@ class Text2VideoNode:
         generator.aspect_ratio = aspect_ratio
         generator.duration = duration
 
-        generator.camera_control = CameraControl()
-        generator.camera_control.type = camera_control_type
+        if camera_control_type != 'None':
+            generator.camera_control = CameraControl()
+            generator.camera_control.type = camera_control_type
 
-        if generator.camera_control.type == "simple":
-            generator.camera_control.config = CameraControlConfig()
-            if camera_control_config == "horizontal":
-                generator.camera_control.config.horizontal = camera_control_value
-            if camera_control_config == "vertical":
-                generator.camera_control.config.vertical = camera_control_value
-            if camera_control_config == "pan":
-                generator.camera_control.config.pan = camera_control_value
-            if camera_control_config == "tilt":
-                generator.camera_control.config.tilt = camera_control_value
-            if camera_control_config == "roll":
-                generator.camera_control.config.roll = camera_control_value
-            if camera_control_config == "zoom":
-                generator.camera_control.config.zoom = camera_control_value
+            if generator.camera_control.type == "simple":
+                generator.camera_control.config = CameraControlConfig()
+                if camera_control_config == "horizontal":
+                    generator.camera_control.config.horizontal = camera_control_value
+                if camera_control_config == "vertical":
+                    generator.camera_control.config.vertical = camera_control_value
+                if camera_control_config == "pan":
+                    generator.camera_control.config.pan = camera_control_value
+                if camera_control_config == "tilt":
+                    generator.camera_control.config.tilt = camera_control_value
+                if camera_control_config == "roll":
+                    generator.camera_control.config.roll = camera_control_value
+                if camera_control_config == "zoom":
+                    generator.camera_control.config.zoom = camera_control_value
 
         response = generator.run(client)
 
@@ -490,6 +550,13 @@ class LipSyncTextInputNode:
         "台湾男生": "ai_taiwan_man2_speech02",
         "西安掌柜": "xianzhanggui_speech02",
         "天津姐姐": "tianjinjiejie_speech02",
+        "新闻播报男": "diyinnansang_DB_CN_M_04-v2",
+        "译制片男": "yizhipiannan-v1",
+        "元气少女": "guanxiaofang-v2",
+        "撒娇女友": "tianmeixuemei-v1",
+        "刀片烟嗓": "daopianyansang-v1",
+        "乖巧正太": "mengwa-v1",
+
         "Sunny": "genshin_vindi2",
         "Sage": "zhinen_xuesheng",
         "Ace": "AOT",
@@ -514,7 +581,9 @@ class LipSyncTextInputNode:
         "Lore": "calm_story1",
         "Crag": "uk_man2",
         "Prattle": "laopopo_speech02",
-        "Hearth": "heainainai_speech02"
+        "Hearth": "heainainai_speech02",
+        "The Reader": "reader_en_m-v1",	
+        "Commercial Lady": "commercial_lady_en_f-v1"
     }
 
     @classmethod
@@ -598,11 +667,11 @@ class LipSyncNode:
         return {
             "required": {
                 "client": ("KLING_AI_API_CLIENT", ),
-                "video_id": ("STRING", {"multiline": False, "default": ""}),
                 "input": ("KLING_AI_API_LIPSYNC_INPUT", )
             },
             "optional": {
-                
+                "video_id": ("STRING", {"multiline": False, "default": ""}),
+                "video_url": ("STRING", {"multiline": False, "default": ""}),
             }
         }
 
@@ -613,11 +682,66 @@ class LipSyncNode:
     RETURN_TYPES = ("STRING", "STRING")
     RETURN_NAMES = ("url", "video_id")
 
-    def run(self, client, video_id, input):
+    def run(self, client, input, video_id=None, video_url=None):
+        if video_id is None and video_url is None:
+            raise Exception(f"Please input video_id or video_url.")
 
         generator = LipSync()
         input.video_id = video_id
+        input.video_url = video_url
         generator.input = input
+        
+        response = generator.run(client)
+
+        for video_info in response.task_result.videos:
+            print(f'KLing API output video id: {video_info.id}, url: {video_info.url}')
+            return (video_info.url, video_info.id)
+        
+        return ('', '')
+
+class EffectNode:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "client": ("KLING_AI_API_CLIENT", ),
+                "effect_scene": (["bloombloom", "dizzydizzy", "fuzzyfuzzy", "squish", "expansion", "hug", "kiss", "heart_gesture"], ),
+                "model_name": (["kling-v1", "kling-v1-5", "kling-v1-6"], ),
+                "mode": (["std", "pro"],),
+                "duration": (["5", "10"],),
+                "image0": ("IMAGE",),
+            },
+            "optional": {
+                "image1": ("IMAGE",)
+            }
+        }
+
+    OUTPUT_NODE = True
+    FUNCTION = "run"
+    CATEGORY = "KLingAI"
+
+    RETURN_TYPES = ("STRING", "STRING")
+    RETURN_NAMES = ("url", "video_id")
+
+    def run(self, client, effect_scene, model_name, mode, duration, image0, image1=None):
+
+        generator = Effects()
+        generator.effect_scene = effect_scene
+        generator.input = EffectInput()
+        if effect_scene in ["bloombloom", "dizzydizzy", "fuzzyfuzzy", "squish", "expansion"]:
+            generator.input.model_name = 'kling-v1-6'
+            generator.input.mode = mode
+            generator.input.duration = "5"
+            generator.input.image = _image_to_base64(image0)
+        else:
+            generator.input.model_name = model_name
+            generator.input.mode = mode
+            generator.input.duration = duration
+            generator.input.image = _image_to_base64(image0)
+            if image1 is None:
+                generator.input.image = _image_to_base64(image0)
+            else:
+                generator.input.images = [_image_to_base64(image0), _image_to_base64(image1)]
         
         response = generator.run(client)
 

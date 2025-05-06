@@ -2,7 +2,7 @@ from .prediction import Prediction, ImagePredictionResponse
 
 
 class ImageGenerator(Prediction):
-    model: str
+    model_name: str
 
     prompt: str
 
@@ -10,7 +10,11 @@ class ImageGenerator(Prediction):
 
     image: str
 
+    image_reference: str
+
     image_fidelity: float
+
+    human_fidelity: float
 
     n: int
 

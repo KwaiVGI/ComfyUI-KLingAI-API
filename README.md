@@ -1,6 +1,6 @@
 # ComfyUI-KLingAI-API
 
-This is a custom node for ComfyUI that allows you to use the KLing AI API directly in ComfyUI. KLing AI API is based on top of [KLing AI](https://klingai.com/). For more information, see [KLing AI API Documentation](https://docs.qingque.cn/d/home/eZQArO-0RpjbQMpf5DPa-w8Rp?identityId=1oEER8VjdS8#section=h.wxrj3t7cbpg3).
+This is a custom node for ComfyUI that allows you to use the KLing AI API directly in ComfyUI. KLing AI API is based on top of [KLing AI](https://app.klingai.com/global/dev/document-api/quickStart/productIntroduction/overview). For more information, see [KLing AI API Documentation](https://docs.qingque.cn/d/home/eZQArO-0RpjbQMpf5DPa-w8Rp?identityId=1oEER8VjdS8#section=h.wxrj3t7cbpg3).
 
 
 ## Requirements
@@ -67,6 +67,12 @@ This node is used to extend a video.
 This node is used to generate a lip sync video.
 <p align="center">
   <img src="./examples/lip_sync.png" alt="lip_sync">
+</p>
+
+### Effects
+You can achieve different special effects based on the effect_scene.
+<p align="center">
+  <img src="./examples/video_effects.png" alt="lip_sync">
 </p>
 
 ## Pricing
