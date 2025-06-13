@@ -1,0 +1,15 @@
+[project]
+name = "comfyui-klingai-api"
+description = "Provide high-quality video and image generation capabilities, meeting creators' needs for creative content production and management through more convenient operations, richer functionalities, professional parameters, and stunning effects."
+version = "1.0.0"
+license = {file = "LICENSE"}
+dependencies = ["pyjwt", "httpx", "pydantic", "pillow", "numpy"]
+
+[project.urls]
+Repository = "https://github.com/KwaiVGI/ComfyUI-KLingAI-API"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = ""
+DisplayName = "ComfyUI-KLingAI-API"
+Icon = ""
