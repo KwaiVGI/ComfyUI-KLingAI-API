@@ -1,6 +1,7 @@
 import time
 from typing import List
 from .client import Client
+import torch
 
 try:
     from pydantic import v1 as pydantic
@@ -42,6 +43,26 @@ class ImagePredictionResponse(BaseModel):
 
     task_result: Result
 
+class ImageExpanderPredictionResponse(BaseModel):
+
+    class Result(BaseModel):
+        class ImageDescription(BaseModel):
+            index: str = None
+            url: str = None
+        images: List[ImageDescription] = []
+
+
+    task_id: str = None
+
+    task_status: str = None
+
+    task_status_msg:str = None
+
+    created_at: str = None
+
+    updated_at: str = None
+
+    task_result:Result
 
 class VideoPredictionResponse(BaseModel):
     class Result(BaseModel):
@@ -56,6 +77,8 @@ class VideoPredictionResponse(BaseModel):
 
     task_status: str = None
 
+    session_id:str = None
+
     created_at: str = None
 
     updated_at: str = None
@@ -63,6 +86,93 @@ class VideoPredictionResponse(BaseModel):
     task_status_msg: str = None
 
     task_result: Result = None
+
+# TODO Video2Audio / Text2Audio
+class AudioResponse(BaseModel):
+    # class TaskInfo(BaseModel):
+    #     external_task_id: str = None
+
+    class Result(BaseModel):
+        class AudiosDescription(BaseModel):
+            audio_id: str = None
+            url_mp3: str = None
+            url_wav: str = None
+            duration_mp3: float = None
+            duration_wav: float = None
+
+        audios: List[AudiosDescription] = []
+
+    task_id: str = None
+
+    task_status: str = None
+
+    task_status_msg: str = None
+
+    # task_info:TaskInfo = None
+
+    created_at: str = None
+
+    updated_at: str = None
+
+    task_result: Result = None
+
+class Video2AudioResponse(BaseModel):
+
+    class Result(BaseModel):
+        class AudiosDescription(BaseModel):
+            video_id:str=None
+            video_url:str = None
+            audio_id: str = None
+            url_mp3: str = None
+            url_wav: str = None
+            duration_mp3: str = None
+            duration_wav: str = None
+
+        audios: List[AudiosDescription] = []
+
+    task_id: str = None
+
+    task_status: str = None
+
+    task_status_msg: str = None
+
+    created_at: str = None
+
+    updated_at: str = None
+
+    task_result: Result = None
+
+
+class MultiImage2VideoResponse(BaseModel):
+
+    class TaskInfo(BaseModel):
+        external_task_id: str = None
+
+    class Result(BaseModel):
+        class VideosDescription(BaseModel):
+            id: str = None
+            url: str = None
+            duration: str = None
+
+        videos: List[VideosDescription] = []
+
+    task_id: str = None
+
+    task_status: str = None
+
+    task_status_msg: str = None
+
+    task_info:TaskInfo = None
+
+    created_at: str = None
+
+    updated_at: str = None
+
+    task_result: Result = None
+
+
+
+
 
 
 class Prediction:
@@ -78,17 +188,49 @@ class Prediction:
         self._task: PredictionResponse = None
         self._task_info = None
 
+    # def to_dict(self):
+    #
+    #     result = {}
+    #     for key in dir(self):
+    #         value = getattr(self, key)
+    #         if key.startswith('_') or callable(value):
+    #             continue
+    #         if hasattr(value, "to_dict"):
+    #             result[key] = value.to_dict()
+    #         else:
+    #             result[key] = value
+    #     return result
+
     def to_dict(self):
+        def convert_value(value):
+            # 1. 如果是 Tensor，转换为可序列化的列表
+            if isinstance(value, torch.Tensor):
+                # 移到 CPU -> 转为 numpy 数组 -> 转为 Python 列表
+                return value.cpu().detach().numpy().tolist()
+
+            # 2. 如果对象自身有 to_dict 方法，递归调用（保持原有逻辑）
+            if hasattr(value, "to_dict"):
+                return value.to_dict()
+
+            # 3. 如果是列表，递归处理每个元素
+            if isinstance(value, list):
+                return [convert_value(item) for item in value]
+
+            # 4. 如果是字典，递归处理每个值
+            if isinstance(value, dict):
+                return {k: convert_value(v) for k, v in value.items()}
+
+            # 5. 其他类型直接返回（如字符串、数字等原生可序列化类型）
+            return value
 
         result = {}
         for key in dir(self):
             value = getattr(self, key)
+            # 跳过私有属性和方法
             if key.startswith('_') or callable(value):
                 continue
-            if hasattr(value, "to_dict"):
-                result[key] = value.to_dict()
-            else:
-                result[key] = value
+            # 用转换函数处理所有值
+            result[key] = convert_value(value)
         return result
 
     def _query_prediction_info(self, client, task_id):

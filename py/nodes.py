@@ -1,4 +1,4 @@
-from .api import Client, ImageGenerator, Image2Video, Text2Video, CameraControl, CameraControlConfig, KolorsVurtualTryOn, VideoExtend, LipSync, LipSyncInput, EffectInput, Effects
+from .api import Client, ImageGenerator,ImageExpander, Image2Video,Video2Audio,MultiImages2Video,Text2Audio,Text2Video, CameraControl, CameraControlConfig, KolorsVurtualTryOn, VideoExtend, LipSync, LipSyncInput, EffectInput, Effects
 import base64
 import io
 import os
@@ -9,7 +9,7 @@ import requests
 import torch
 from collections.abc import Iterable
 import configparser
-import folder_paths
+# import folder_paths
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
@@ -116,7 +116,7 @@ class ImageGeneratorNode:
         return {
             "required": {
                 "client": ("KLING_AI_API_CLIENT",),
-                "model": (["kling-v1", "kling-v1-5", "kling-v2"],),
+                "model": (["kling-v1", "kling-v1-5", "kling-v2", "kling-v2-new", "kling-v2-1"],),
                 "prompt": ("STRING", {"multiline": True, "default": ""}),
             },
             "optional": {
@@ -150,6 +150,9 @@ class ImageGeneratorNode:
                     "lazy": True
                 }),
                 "aspect_ratio": (["16:9", "9:16", "1:1", "4:3", "3:4", "3:2", "2:3"],),
+                "resolution":("STRING",
+                    ["1k","2k",],
+                ),
             }
         }
 
@@ -171,17 +174,24 @@ class ImageGeneratorNode:
                  image_reference="None",
                  image_fidelity=None,
                  human_fidelity=None,
+                 resolution=None,
                  image_num=None,
                  aspect_ratio=None):
         generator = ImageGenerator()
         generator.model_name = model
         generator.prompt = prompt
         generator.negative_prompt = negative_prompt
+        generator.resolution=resolution
         generator.image = _image_to_base64(image)
         generator.image_fidelity = image_fidelity
         generator.aspect_ratio = aspect_ratio
         generator.n = image_num
         generator.human_fidelity = human_fidelity
+
+        if model == "kling-v2-1":
+            generator.human_fidelity = None
+            generator.image_fidelity = None
+
         if image_reference != 'None':
             generator.image_reference = image_reference
 
@@ -198,6 +208,96 @@ class ImageGeneratorNode:
 
         return (imgs, )
 
+class ImageExpanderNode:
+
+    # TODO ?
+    @classmethod
+    def INPUT_TYPES(s):
+
+        expansion_ratio_parameter = {
+                    "default":0,
+                    "min":0,
+                    "max":2,
+                }
+
+        return {
+            "required": {
+                "client": ("KLING_AI_API_CLIENT",),
+                "image":("IMAGE",),
+                "up_expansion_ratio":("FLOAT",expansion_ratio_parameter),
+                "down_expansion_ratio":("FLOAT",expansion_ratio_parameter),
+                "left_expansion_ratio":("FLOAT",expansion_ratio_parameter),
+                "right_expansion_ratio":("FLOAT",expansion_ratio_parameter),
+
+
+
+            },
+            "optional": {
+                "prompt": ("STRING", {"multiline": True, "default": ""}),
+                "image_num": ("INT", {
+                    "default": 1,
+                    "min": 0,
+                    "max": 9,
+                    "step": 1,
+                    "display": "number",
+                    "lazy": True
+                }),
+            }
+
+        }
+
+
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("image",)
+
+    FUNCTION = "generate"
+
+    OUTPUT_NODE = False
+
+    CATEGORY = "KLingAI"
+
+
+    def generate(self,
+                 client,
+                 image,
+                 prompt=None,
+                 image_num=None,
+                 up_expansion_ratio=None,
+                 down_expansion_ratio=None,
+                 left_expansion_ratio=None,
+                 right_expansion_ratio=None,
+                 ):
+            generator = ImageExpander()
+
+            generator.image = _image_to_base64(image)
+            generator.up_expansion_ratio = up_expansion_ratio
+            generator.down_expansion_ratio = down_expansion_ratio
+            generator.left_expansion_ratio = left_expansion_ratio
+            generator.right_expansion_ratio = right_expansion_ratio
+
+            generator.prompt = prompt
+
+            # generator.external_task_id = str(uuid.uuid4())
+
+            generator.n = image_num
+
+            # if up_expansion_ratio==None and down_expansion_ratio==None and left_expansion_ratio ==None and right_expansion_ratio == None:
+            #     return image
+
+            response = generator.run(client)
+
+            imgs = None
+            for image_info in response.task_result.images:
+                img = _images2tensor(_decode_image(_fetch_image(image_info.url)))
+                if imgs is None:
+                    imgs = img
+                else:
+                    imgs = torch.cat([imgs, img], dim=0)
+
+                print(f'KLing API output: {image_info.url}')
+
+            return (imgs,)
+
 
 class Image2VideoNode:
     @classmethod
@@ -205,7 +305,7 @@ class Image2VideoNode:
         return {
             "required": {
                 "client": ("KLING_AI_API_CLIENT",),
-                "model": (["kling-v1", "kling-v1-5", "kling-v1-6", "kling-v2-master"],),
+                "model": (["kling-v1", "kling-v1-5", "kling-v1-6", "kling-v2-master","kling-v2-1","kling-v2-1-master"],),
             },
             "optional": {
                 "image": ("IMAGE",),
@@ -260,7 +360,7 @@ class Image2VideoNode:
                  camera_control_type=None,
                  camera_control_config=None,
                  camera_control_value=None):
-        
+
         generator = Image2Video()
         generator.model_name = model
         generator.image = _image_to_base64(image)
@@ -295,7 +395,7 @@ class Image2VideoNode:
         for video_info in response.task_result.videos:
             print(f'KLing API output video id: {video_info.id}, url: {video_info.url}')
             return (video_info.url, video_info.id)
-        
+
         return ('', '')
 
 
@@ -305,7 +405,7 @@ class Text2VideoNode:
         return {
             "required": {
                 "client": ("KLING_AI_API_CLIENT",),
-                "model": (["kling-v1", "kling-v1-6", "kling-v2-master"],),
+                "model": (["kling-v1", "kling-v1-6", "kling-v2-master","kling-v2-1","kling-v2-1-master"],),
                 "prompt": ("STRING", {"multiline": True, "default": ""}),
             },
             "optional": {
@@ -392,7 +492,7 @@ class Text2VideoNode:
         for video_info in response.task_result.videos:
             print(f'KLing API output video id: {video_info.id}, url: {video_info.url}')
             return (video_info.url, video_info.id)
-        
+
         return ('', '')
 
 
@@ -457,14 +557,16 @@ class PreviewVideo:
         if not save_output:
             return {"ui": {"video_url": [video_url]}, "result": ('', )}
         
-        output_dir = folder_paths.get_output_directory()
+        # output_dir = folder_paths.get_output_directory()
+        output_dir = None
         (
             full_output_folder,
             filename,
             _,
             _,
             _,
-        ) = folder_paths.get_save_image_path(filename_prefix, output_dir)
+        # ) = folder_paths.get_save_image_path(filename_prefix, output_dir)
+        ) = None
 
         max_counter = 0
 
@@ -485,6 +587,46 @@ class PreviewVideo:
         open(file_path, "wb").write(_fetch_image(video_url))            
 
         return {"ui": {"video_url": [video_url]}, "result": (file_path, )}
+
+
+class URLDisplay:
+    """Comflowy 自定义组件：展示 URL 为可点击链接"""
+
+    def __init__(self):
+        self.type = "output"  # 标识为输出组件
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                # 接收上一步输出的 URL（字符串类型）
+                "url": ("STRING", {"default": "", "description": "需要展示的 URL 地址"}),
+                "display_text": ("STRING", {"default": "点击访问链接", "description": "链接显示文本"})
+            }
+        }
+
+    # 组件输出（无实际数据输出，仅用于 UI 展示）
+    RETURN_TYPES = ()
+    FUNCTION = "display_url"
+    OUTPUT_NODE = False  # 标记为输出节点，会在 UI 中显示结果
+
+    def display_url(self, url, display_text):
+        """处理 URL 并返回 UI 展示内容"""
+        # 处理空 URL 情况
+        if not url.strip():
+            return {"ui": {"text": ["未提供有效的 URL"]}}
+
+        # 确保 URL 包含协议头（http/https）
+        if not url.startswith(("http://", "https://")):
+            url = f"https://{url}"
+
+        # # 构造 HTML 链接（Comflowy 支持在 UI 中渲染简单 HTML）
+        # link_html = f'<a href="{url}" target="_blank" style="color: #2563eb; text-decoration: underline; font-weight: 500;">{display_text}</a>'
+
+        # 返回 UI 展示内容
+        return {"ui": {"text": [url]}}
+
+
 
 class VideoExtendNode:
     @classmethod
@@ -667,7 +809,8 @@ class LipSyncNode:
         return {
             "required": {
                 "client": ("KLING_AI_API_CLIENT", ),
-                "input": ("KLING_AI_API_LIPSYNC_INPUT", )
+                "input": ("KLING_AI_API_LIPSYNC_INPUT", ),
+                "face_id":("STRING", {"multiline": False, "default": ""})
             },
             "optional": {
                 "video_id": ("STRING", {"multiline": False, "default": ""}),
@@ -705,7 +848,8 @@ class EffectNode:
         return {
             "required": {
                 "client": ("KLING_AI_API_CLIENT", ),
-                "effect_scene": (["bloombloom", "dizzydizzy", "fuzzyfuzzy", "squish", "expansion", "hug", "kiss", "heart_gesture"], ),
+                "effect_scene": (["jelly_press", "jelly_slice", "jelly_squish", "jelly_jiggle", "pixelpixel", "yearbook", "instant_film", "anime_figure",
+                                  "rocketrocket",  "bloombloom", "dizzydizzy", "fuzzyfuzzy", "squish", "expansion", "hug", "kiss", "heart_gesture"], ),
                 "model_name": (["kling-v1", "kling-v1-5", "kling-v1-6"], ),
                 "mode": (["std", "pro"],),
                 "duration": (["5", "10"],),
@@ -728,7 +872,8 @@ class EffectNode:
         generator = Effects()
         generator.effect_scene = effect_scene
         generator.input = EffectInput()
-        if effect_scene in ["bloombloom", "dizzydizzy", "fuzzyfuzzy", "squish", "expansion"]:
+        if effect_scene in ["jelly_press", "jelly_slice", "jelly_squish", "jelly_jiggle", "pixelpixel", "yearbook", "instant_film", "anime_figure",
+                                  "rocketrocket",  "bloombloom", "dizzydizzy", "fuzzyfuzzy", "squish", "expansion", "hug", "kiss", "heart_gesture"]:
             generator.input.model_name = 'kling-v1-6'
             generator.input.mode = mode
             generator.input.duration = "5"
@@ -750,3 +895,115 @@ class EffectNode:
             return (video_info.url, video_info.id)
         
         return ('', '')
+
+class Video2AudioNode:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "client": ("KLING_AI_API_CLIENT",),
+                "video_id":("STRING", {"multiline": True, "default": ""}),
+                "video_url":("STRING", {"multiline": True, "default": ""}),
+            },
+            "optional": {
+                "sound_effect_prompt":("STRING", {"multiline": True, "default": ""}),
+                "bgm_prompt":("STRING", {"multiline": True, "default": ""}),
+                "asmr_mod":("BOOLEAN", {"multiline": True, "default": False}),
+
+            }
+        }
+
+    RETURN_TYPES = ("STRING","STRING","STRING","STRING")
+    RETURN_NAMES = ("videos_id","videos_url","audio_id","audio_url_mp3")
+
+    FUNCTION = "generate"
+
+    OUTPUT_NODE = False
+
+    CATEGORY = "KLingAI"
+
+    def generate(self,
+                 client,
+                 video_id,
+                 video_url,
+                 sound_effect_prompt=None,
+                 bgm_prompt=None,
+                 asmr_mode=False,
+                 ):
+
+        generator = Video2Audio()
+        generator.video_id = video_id
+        generator.video_url = video_url
+
+        # 确保接口id和url地址仅能存在一个
+        if video_id and video_url:
+            generator.video_url = None
+
+        generator.sound_effect_prompt = sound_effect_prompt
+        generator.bgm_prompt = bgm_prompt
+        generator.asmr_mode = asmr_mode
+
+        response = generator.run(client)
+
+
+        results = []
+        for audio_info in response.task_result.audios:
+            results.append({
+                "videos_id":audio_info["videos_id"],
+                "videos_url":audio_info["videos_url"],
+                "audio_id":audio_info["audio_id"],
+                "audio_url":audio_info["audio_url"]
+            })
+
+        return (results)
+
+
+
+class MultiImagesToVideoNode:
+    pass
+
+
+class TextToAudioNode:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "client": ("KLING_AI_API_CLIENT",),
+                "prompt": ("STRING", {"multiline": True, "default": ""}),
+                "duration": ("FLOAT",{
+                    "default":3.0,
+                    "min":3.0,
+                    "max":10.0,
+                    "step":0.1,
+                    "display":"number",
+                },),
+            },
+        }
+
+    RETURN_TYPES = ("STRING", "STRING")
+    RETURN_NAMES = ("id", "url")
+
+    FUNCTION = "generate"
+
+    OUTPUT_NODE = True
+
+    CATEGORY = "KLingAI"
+
+    def generate(self,
+                 client,
+                 prompt,
+                 duration,
+                 ):
+
+        generator = Text2Audio()
+
+        generator.prompt = prompt
+        generator.duration = duration
+        response = generator.run(client)
+
+        return (response.task_result.audios[0].audio_id,response.task_result.audios[0].url_mp3)
+
+        # for video_info in response.task_result.videos:
+        #     print(f'KLing API output video id: {video_info.id}, url: {video_info.url}')
+        #     return (video_info.url, video_info.id)
+        # return ('', '')

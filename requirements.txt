@@ -3,3 +3,4 @@ httpx
 pydantic
 pillow
 numpy
+requests

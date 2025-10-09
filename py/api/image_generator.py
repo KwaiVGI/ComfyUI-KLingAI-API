@@ -18,6 +18,8 @@ class ImageGenerator(Prediction):
 
     n: int
 
+    external_task_id:str
+
     aspect_ratio: str
 
     def __init__(self):
