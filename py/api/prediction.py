@@ -156,7 +156,7 @@ class MultiImage2VideoResponse(BaseModel):
 
         videos: List[VideosDescription] = []
 
-    task_id: str = None
+    task_id: str = None#
 
     task_status: str = None
 
