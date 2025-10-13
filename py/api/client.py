@@ -2,24 +2,30 @@ import time
 import jwt
 import httpx
 from .exceptions import KLingAPIError
-
+from enum import Enum
 
 def _raise_for_status(resp: httpx.Response) -> None:
     if resp.status_code != 200 or 'data' not in resp.json():
         raise KLingAPIError.from_response(resp)
 
 
+class ApiLocation(Enum):
+    CHINA = "https://api-beijing.klingai.com"
+    GLOBAL = "https://api.klingai.com"
+
+
 class Client:
     __token = None
     __client = None
 
-    def __init__(self, access_key, secret_key, timeout=5, poll_interval=1.0, ttl=1800):
+    def __init__(self, access_key, secret_key, in_china=True, timeout=5, poll_interval=1.0, ttl=1800):
         super().__init__()
         self._access_key = access_key
         self._secret_key = secret_key
         self._timeout = timeout
         self._create_time = None
         self._ttl = ttl
+        self._area = ApiLocation.CHINA if in_china else ApiLocation.GLOBAL
 
         self.poll_interval = poll_interval
 
@@ -53,7 +59,7 @@ class Client:
     @property
     def _client(self) -> httpx.Client:
         if self._is_expired:
-            base_url = "https://api.klingai.com"
+            base_url = str(self._area.value)
             headers = {
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {self._token}"

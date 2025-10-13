@@ -1,5 +1,6 @@
 from .prediction import Prediction, VideoPredictionResponse
 
+
 class LipSyncInput(Prediction):
     video_id: str
     video_url: str
@@ -23,4 +24,3 @@ class LipSync(Prediction):
         self._query_prediction_info_method = "GET"
         self._query_prediction_info_path = "/v1/videos/lip-sync"
         self._response_cls = VideoPredictionResponse
-

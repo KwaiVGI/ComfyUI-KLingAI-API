@@ -1,9 +1,10 @@
 from .prediction import Prediction, VideoPredictionResponse
 from typing import List
 
+
 class EffectInput(Prediction):
     model_name: str
-    
+
     mode: str
 
     image: str

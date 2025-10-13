@@ -75,6 +75,27 @@ You can achieve different special effects based on the effect_scene.
   <img src="./examples/video_effects.png" alt="lip_sync">
 </p>
 
+### ImageExpander
+
+This node is used to expand a image.
+<p align="center">
+  <img src="./examples/image_expand.png" alt="image_expand">
+</p>
+
+###  Video2AudioNode
+
+This node is used to generate a audio from video.
+<p align="center">
+  <img src="./examples/video2audio.png" alt="video2audio">
+</p>
+
+###  TextToAudioNode
+
+This node is used to generate a audio from text.
+<p align="center">
+  <img src="./examples/text2audio.png" alt="text2audio">
+</p>
+
 ## Pricing
 
 For pricing, follow [KLing AI Pricing](https://klingai.com/dev-center).
