@@ -1,5 +1,6 @@
 from .prediction import Prediction, VideoPredictionResponse
 
+
 class VideoExtend(Prediction):
     video_id: str
 
@@ -12,4 +13,3 @@ class VideoExtend(Prediction):
         self._query_prediction_info_method = "GET"
         self._query_prediction_info_path = "/v1/videos/video-extend"
         self._response_cls = VideoPredictionResponse
-

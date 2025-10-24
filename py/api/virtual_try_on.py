@@ -15,4 +15,3 @@ class KolorsVurtualTryOn(Prediction):
         self._query_prediction_info_method = "GET"
         self._query_prediction_info_path = "/v1/images/kolors-virtual-try-on/"
         self._response_cls = ImagePredictionResponse
-

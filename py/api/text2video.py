@@ -39,4 +39,3 @@ class Text2Video(Prediction):
         self._query_prediction_info_method = "GET"
         self._query_prediction_info_path = "/v1/videos/text2video"
         self._response_cls = VideoPredictionResponse
-

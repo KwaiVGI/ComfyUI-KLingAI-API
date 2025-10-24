@@ -1,6 +1,7 @@
 import time
 from typing import List
 from .client import Client
+import torch
 
 try:
     from pydantic import v1 as pydantic
@@ -40,7 +41,28 @@ class ImagePredictionResponse(BaseModel):
 
     updated_at: str = None
 
-    task_result: Result
+    task_result: Result = None
+
+
+class ImageExpanderPredictionResponse(BaseModel):
+    class Result(BaseModel):
+        class ImageDescription(BaseModel):
+            index: str = None
+            url: str = None
+
+        images: List[ImageDescription] = []
+
+    task_id: str = None
+
+    task_status: str = None
+
+    task_status_msg: str = None
+
+    created_at: str = None
+
+    updated_at: str = None
+
+    task_result: Result = None
 
 
 class VideoPredictionResponse(BaseModel):
@@ -56,11 +78,86 @@ class VideoPredictionResponse(BaseModel):
 
     task_status: str = None
 
+    session_id: str = None
+
     created_at: str = None
 
     updated_at: str = None
 
     task_status_msg: str = None
+
+    task_result: Result = None
+
+
+# TODO Video2Audio / Text2Audio
+class AudioResponse(BaseModel):
+    class Result(BaseModel):
+        class AudiosDescription(BaseModel):
+            audio_id: str = None
+            url_mp3: str = None
+            url_wav: str = None
+            duration_mp3: float = None
+            duration_wav: float = None
+
+        audios: List[AudiosDescription] = []
+
+    task_id: str = None
+
+    task_status: str = None
+
+    task_status_msg: str = None
+
+    created_at: str = None
+
+    updated_at: str = None
+
+    task_result: Result = None
+
+
+class Video2AudioResponse(BaseModel):
+    class Result(BaseModel):
+        class AudiosDescription(BaseModel):
+            video_id: str = None
+            video_url: str = None
+            audio_id: str = None
+            url_mp3: str = None
+            url_wav: str = None
+            duration_mp3: str = None
+            duration_wav: str = None
+
+        audios: List[AudiosDescription] = []
+
+    task_id: str = None
+
+    task_status: str = None
+
+    task_status_msg: str = None
+
+    created_at: str = None
+
+    updated_at: str = None
+
+    task_result: Result = None
+
+
+class MultiImage2VideoResponse(BaseModel):
+    class Result(BaseModel):
+        class VideosDescription(BaseModel):
+            id: str = None
+            url: str = None
+            duration: str = None
+
+        videos: List[VideosDescription] = []
+
+    task_id: str = None  #
+
+    task_status: str = None
+
+    task_status_msg: str = None
+
+    created_at: str = None
+
+    updated_at: str = None
 
     task_result: Result = None
 
@@ -79,16 +176,27 @@ class Prediction:
         self._task_info = None
 
     def to_dict(self):
+        def convert_value(value):
+            if isinstance(value, torch.Tensor):
+                return value.cpu().detach().numpy().tolist()
+
+            if hasattr(value, "to_dict"):
+                return value.to_dict()
+
+            if isinstance(value, list):
+                return [convert_value(item) for item in value]
+
+            if isinstance(value, dict):
+                return {k: convert_value(v) for k, v in value.items()}
+
+            return value
 
         result = {}
         for key in dir(self):
             value = getattr(self, key)
             if key.startswith('_') or callable(value):
                 continue
-            if hasattr(value, "to_dict"):
-                result[key] = value.to_dict()
-            else:
-                result[key] = value
+            result[key] = convert_value(value)
         return result
 
     def _query_prediction_info(self, client, task_id):
